@@ -949,7 +949,7 @@ export default function App() {
           />
         </div>
         
-        <div className="hidden lg:block">
+        <div className="w-full">
           <SlideTemplates
             onApplyTemplate={handleApplyTemplate}
             onApplyUserTemplate={handleApplyUserTemplate}
