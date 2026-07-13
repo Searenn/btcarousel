@@ -121,4 +121,9 @@ body {
   -webkit-box-decoration-break: clone !important;
 }
 
+*:focus, *:focus-visible {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
 
