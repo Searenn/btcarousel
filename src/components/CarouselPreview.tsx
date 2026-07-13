@@ -799,8 +799,8 @@ export default function CarouselPreview({
         id="phone-device-viewport"
       >
         
-        <div className="absolute top-0 inset-x-0 h-6 bg-zinc-850 rounded-b-3xl z-40 flex items-center justify-center pointer-events-none">
-          <div className="w-12 h-2.5 bg-black rounded-full" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120px] h-5 bg-zinc-850 rounded-b-[18px] z-40 flex items-center justify-center pointer-events-none">
+          <div className="w-12 h-1.5 bg-black rounded-full" />
         </div>
         
         <div

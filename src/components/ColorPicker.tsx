@@ -60,7 +60,7 @@ export default function ColorPicker({ palette, onChangePalette, backgroundImage,
     onChangePalette(updated);
   };
   return (
-    <div className="bg-zinc-900 border border-zinc-850 rounded-xl p-3 space-y-3" id="dark-color-picker">
+    <div className="p-4 space-y-4" id="dark-color-picker">
       <div className="flex items-center justify-between">
         <h3 className="font-bold text-zinc-200 text-xs flex items-center gap-1.5 uppercase tracking-wider">
           <Palette className="w-3.5 h-3.5 text-violet-400" /> Цвета макета

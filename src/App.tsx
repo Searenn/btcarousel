@@ -647,137 +647,126 @@ export default function App() {
       
       <main className="flex-1 max-w-[1600px] w-full mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-[minmax(0,4fr)_minmax(0,5fr)_minmax(0,2.5fr)] gap-8 items-start">
         
-        <div className="space-y-6">
+        <div className="bg-zinc-900/50 border border-zinc-850 rounded-2xl flex flex-col divide-y divide-zinc-800/50 shadow-xl overflow-hidden">
           
-          <div className="bg-zinc-900 border border-zinc-850 rounded-2xl p-5 space-y-4" id="slide-customizer-card">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
+          <div className="p-4 space-y-3" id="slide-customizer-card">
+            <div className="flex items-center justify-between">
               <div>
                 <span className="text-[10px] uppercase font-bold text-indigo-405 tracking-wider font-sans">Настройки медиа</span>
-                <h3 className="font-bold text-white text-sm mt-0.5 font-sans">Фон активного слайда</h3>
-              </div>
-              <Sliders className="w-4 h-4 text-zinc-500" />
-            </div>
-            <div className="space-y-2">
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => bgFileInputRef.current?.click()}
-                  className="p-3 bg-zinc-950 border border-dashed border-zinc-800 hover:border-violet-500/50 rounded-xl text-center space-y-1.5 group cursor-pointer transition-all"
-                >
-                  <Upload className="w-4 h-4 mx-auto text-zinc-500 group-hover:text-violet-400" />
-                  <span className="block text-[10px] font-bold text-zinc-300 font-sans">Загрузить фоновое фото</span>
-                </button>
-                <div className="bg-zinc-950 border border-zinc-850 rounded-xl p-3 flex flex-col justify-center items-center text-center">
-                  {currentSlide?.backgroundImage ? (
-                    <div className="relative group w-12 aspect-[1/1.5] rounded border border-zinc-800 overflow-hidden">
-                      <img
-                        referrerPolicy="no-referrer"
-                        src={currentSlide.backgroundImage}
-                        alt="Bg Mini"
-                        className="w-full h-full object-cover"
-                      />
-                      <button
-                        onClick={() => handleUpdateSlide(currentSlide.id, { backgroundImage: null })}
-                        className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 flex items-center justify-center text-rose-500 font-extrabold text-[9px] transition-opacity"
-                      >
-                        Удалить
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-[10px] text-zinc-500 font-medium font-sans">Заливка фоновым цветом</span>
-                  )}
-                </div>
+                <h3 className="font-bold text-white text-sm font-sans flex items-center gap-2">Фон слайда</h3>
               </div>
               
-              {currentSlide?.backgroundImage && (
-                <div className="flex items-center gap-2 pt-2 border-t border-zinc-800/50">
-                  <span className="text-[10px] text-zinc-400 font-bold whitespace-nowrap font-sans">Прозрачность фото</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={currentSlide.backgroundOpacity ?? 100}
-                    onMouseDown={pushHistoryCheckpoint}
-                    onTouchStart={pushHistoryCheckpoint}
-                    onChange={(e) => handleUpdateSlide(currentSlide.id, { backgroundOpacity: parseInt(e.target.value) })}
-                    className="flex-1 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-violet-500"
-                  />
-                  <span className="text-[10px] font-mono text-zinc-400 w-8 text-right font-sans">{currentSlide.backgroundOpacity ?? 100}%</span>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => bgFileInputRef.current?.click()}
+                  className="p-1.5 bg-zinc-800 hover:bg-violet-600 rounded-md text-zinc-300 hover:text-white transition-colors cursor-pointer group"
+                  title="Загрузить фото"
+                >
+                  <Upload className="w-4 h-4" />
+                </button>
+                {currentSlide?.backgroundImage && (
+                  <button
+                    onClick={() => handleUpdateSlide(currentSlide.id, { backgroundImage: null })}
+                    className="p-1.5 bg-zinc-800 hover:bg-rose-600 rounded-md text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                    title="Удалить фото"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-          
-          <div className="bg-zinc-900 border border-zinc-850 rounded-xl p-3.5 space-y-2.5" id="presets-selector-box">
-            <h3 className="font-bold text-zinc-200 text-xs flex items-center gap-1.5 uppercase tracking-wider font-sans">
-              <BookOpen className="w-4 h-4 text-violet-400" /> Тема макета
-            </h3>
             
-            <select
-              value={config.selectedGenre}
-              onChange={(e) => {
-                pushHistoryCheckpoint();
-                const presetId = e.target.value as PresetThemeId;
-                const preset = GENRE_PRESETS[presetId];
-                setConfig((prev) => ({
-                  ...prev,
-                  selectedGenre: presetId,
-                  palette: preset.defaultPalette,
-                }));
-                showStatusNotification(`🎨 Установлена тема "${preset.name}"`);
-              }}
-              className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 py-2 px-2.5 rounded-lg font-bold text-xs focus:outline-none focus:ring-1 focus:ring-violet-600 hover:border-zinc-700 transition cursor-pointer"
-            >
-              {Object.values(GENRE_PRESETS).map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+            {currentSlide?.backgroundImage && (
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-[10px] text-zinc-400 font-bold whitespace-nowrap font-sans">Прозрачность ({currentSlide.backgroundOpacity ?? 100}%)</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={currentSlide.backgroundOpacity ?? 100}
+                  onMouseDown={pushHistoryCheckpoint}
+                  onTouchStart={pushHistoryCheckpoint}
+                  onChange={(e) => handleUpdateSlide(currentSlide.id, { backgroundOpacity: parseInt(e.target.value) })}
+                  className="flex-1 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-violet-500"
+                />
+              </div>
+            )}
           </div>
           
-          <div className="bg-zinc-900 border border-zinc-850 rounded-xl p-3.5 space-y-2.5" id="font-selector-box">
-            <h3 className="font-bold text-zinc-200 text-xs flex items-center gap-1.5 uppercase tracking-wider font-sans">
-              <Type className="w-4 h-4 text-violet-400" /> Шрифт текста
-            </h3>
-            <select
-              value={config.customFontFamily || ""}
-              onChange={(e) => {
-                pushHistoryCheckpoint();
-                const font = e.target.value;
-                setConfig((prev) => ({
-                  ...prev,
-                  customFontFamily: font || undefined,
-                }));
-                if (font) {
-                  showStatusNotification(`✍️ Выбран шрифт: ${font}`);
-                } else {
-                  showStatusNotification(`✍️ Сброшено на шрифт темы`);
-                }
-              }}
-              className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 py-2 px-2.5 rounded-lg font-bold text-xs focus:outline-none focus:ring-1 focus:ring-violet-600 hover:border-zinc-700 transition cursor-pointer"
-            >
-              <option value="">Шрифт темы (По умолчанию)</option>
-              <option value="Inter">Inter</option>
-              <option value="Roboto">Roboto</option>
-              <option value="Montserrat">Montserrat</option>
-              <option value="Playfair Display">Playfair Display</option>
-              <option value="EB Garamond">EB Garamond</option>
-              <option value="Cormorant Garamond">Cormorant Garamond</option>
-              <option value="Cinzel">Cinzel</option>
-              <option value="Alegreya Sans SC">Alegreya Sans SC</option>
-              <option value="Orbitron">Orbitron</option>
-              <option value="Space Grotesk">Space Grotesk</option>
-              <option value="JetBrains Mono">JetBrains Mono</option>
-              <option value="Outfit">Outfit</option>
-              <option value="Nunito">Nunito</option>
-              <option value="Poppins">Poppins</option>
-              <option value="Lora">Lora</option>
-              <option value="Merriweather">Merriweather</option>
-              <option value="Fira Sans">Fira Sans</option>
-              <option value="Caveat">Caveat (Рукописный)</option>
-              <option value="Pacifico">Pacifico (Курсивный)</option>
-            </select>
+          <div className="p-4 space-y-4" id="typography-and-theme">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5 whitespace-nowrap">
+                <BookOpen className="w-3.5 h-3.5 text-violet-400" /> Тема
+              </span>
+              <select
+                value={config.selectedGenre}
+                onChange={(e) => {
+                  pushHistoryCheckpoint();
+                  const presetId = e.target.value as PresetThemeId;
+                  const preset = GENRE_PRESETS[presetId];
+                  setConfig((prev) => ({
+                    ...prev,
+                    selectedGenre: presetId,
+                    palette: preset.defaultPalette,
+                  }));
+                  showStatusNotification(`🎨 Установлена тема "${preset.name}"`);
+                }}
+                className="flex-1 bg-transparent border-0 text-zinc-200 text-right font-bold text-xs focus:ring-0 cursor-pointer outline-none max-w-[150px] truncate"
+                style={{ textAlignLast: "right" }}
+              >
+                {Object.values(GENRE_PRESETS).map((p) => (
+                  <option key={p.id} value={p.id} className="bg-zinc-900 text-left">
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5 whitespace-nowrap">
+                <Type className="w-3.5 h-3.5 text-violet-400" /> Шрифт
+              </span>
+              <select
+                value={config.customFontFamily || ""}
+                onChange={(e) => {
+                  pushHistoryCheckpoint();
+                  const font = e.target.value;
+                  setConfig((prev) => ({
+                    ...prev,
+                    customFontFamily: font || undefined,
+                  }));
+                  if (font) {
+                    showStatusNotification(`✍️ Выбран шрифт: ${font}`);
+                  } else {
+                    showStatusNotification(`✍️ Сброшено на шрифт темы`);
+                  }
+                }}
+                className="flex-1 bg-transparent border-0 text-zinc-200 text-right font-bold text-xs focus:ring-0 cursor-pointer outline-none max-w-[150px] truncate"
+                style={{ textAlignLast: "right" }}
+              >
+                <option value="" className="bg-zinc-900 text-left">По умолчанию</option>
+                <option value="Inter" className="bg-zinc-900 text-left">Inter</option>
+                <option value="Roboto" className="bg-zinc-900 text-left">Roboto</option>
+                <option value="Montserrat" className="bg-zinc-900 text-left">Montserrat</option>
+                <option value="Playfair Display" className="bg-zinc-900 text-left">Playfair Display</option>
+                <option value="EB Garamond" className="bg-zinc-900 text-left">EB Garamond</option>
+                <option value="Cormorant Garamond" className="bg-zinc-900 text-left">Cormorant Garamond</option>
+                <option value="Cinzel" className="bg-zinc-900 text-left">Cinzel</option>
+                <option value="Alegreya Sans SC" className="bg-zinc-900 text-left">Alegreya Sans SC</option>
+                <option value="Orbitron" className="bg-zinc-900 text-left">Orbitron</option>
+                <option value="Space Grotesk" className="bg-zinc-900 text-left">Space Grotesk</option>
+                <option value="JetBrains Mono" className="bg-zinc-900 text-left">JetBrains Mono</option>
+                <option value="Outfit" className="bg-zinc-900 text-left">Outfit</option>
+                <option value="Nunito" className="bg-zinc-900 text-left">Nunito</option>
+                <option value="Poppins" className="bg-zinc-900 text-left">Poppins</option>
+                <option value="Lora" className="bg-zinc-900 text-left">Lora</option>
+                <option value="Merriweather" className="bg-zinc-900 text-left">Merriweather</option>
+                <option value="Fira Sans" className="bg-zinc-900 text-left">Fira Sans</option>
+                <option value="Caveat" className="bg-zinc-900 text-left">Caveat (Рукописный)</option>
+                <option value="Pacifico" className="bg-zinc-900 text-left">Pacifico (Курсивный)</option>
+              </select>
+            </div>
           </div>
           
           <ColorPicker
@@ -787,111 +776,97 @@ export default function App() {
             onStartInteraction={pushHistoryCheckpoint}
           />
           
-          <div className="bg-zinc-900 border border-zinc-850 rounded-2xl p-5 space-y-4" id="format-and-settings-card">
+          <div className="p-4 space-y-4" id="format-and-settings-card">
             
-            <div className="space-y-2">
-              <h3 className="font-bold text-white text-sm flex items-center gap-2 font-sans">
-                <Camera className="w-4 h-4 text-violet-400" /> Формат публикации
-              </h3>
-              <div className="grid grid-cols-2 gap-2 font-sans">
+            <div className="space-y-2.5">
+              <span className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
+                <Camera className="w-3.5 h-3.5 text-violet-400" /> Формат публикации
+              </span>
+              <div className="flex bg-zinc-950 p-1 rounded-lg border border-zinc-800/50">
                 <button
                   onClick={() => {
                     pushHistoryCheckpoint();
                     setConfig((prev) => ({ ...prev, ratio: '3:4' as const }));
                   }}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                  className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
                     config.ratio === '3:4'
-                      ? 'bg-violet-600 border-violet-500 text-white shadow-lg shadow-violet-900/30'
-                      : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                      ? 'bg-violet-600 text-white shadow-sm'
+                      : 'text-zinc-500 hover:text-zinc-300'
                   }`}
                 >
-                  📷 Карусель 3:4
+                  📷 3:4 (Карусель)
                 </button>
                 <button
                   onClick={() => {
                     pushHistoryCheckpoint();
                     setConfig((prev) => ({ ...prev, ratio: '9:16' as const }));
                   }}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                  className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
                     config.ratio === '9:16'
-                      ? 'bg-violet-600 border-violet-500 text-white shadow-lg shadow-violet-900/30'
-                      : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                      ? 'bg-violet-600 text-white shadow-sm'
+                      : 'text-zinc-500 hover:text-zinc-300'
                   }`}
                 >
-                  🎬 Видео 9:16
+                  🎬 9:16 (Видео)
                 </button>
               </div>
-              <p className="text-[10px] text-zinc-500 font-sans">
-                {config.ratio === '3:4' ? '1080×1440 — фото-карусель TikTok' : '1080×1920 — вертикальное видео TikTok'}
-              </p>
             </div>
             
             {config.ratio === '9:16' && (
-              <>
-                <div className="border-t border-zinc-800/80 pt-4">
-                  <h3 className="font-bold text-white text-sm flex items-center gap-2 font-sans mb-3">
-                    <Clock className="w-4 h-4 text-emerald-500" /> {window.electron ? "Тайминги MP4 видео" : "Тайминги WebM видео"}
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4 font-sans">
-                    <div>
-                      <div className="flex justify-between text-[11px] mb-1.5">
-                        <span className="text-zinc-400">Показ слайда</span>
-                        <span className="font-bold text-emerald-400">{config.slideDuration}s</span>
-                      </div>
-                      <input
-                        type="range" min="1" max="7" step="0.5"
-                        value={config.slideDuration}
-                        onMouseDown={pushHistoryCheckpoint}
-                        onTouchStart={pushHistoryCheckpoint}
-                        onChange={(e) => setConfig((prev) => ({ ...prev, slideDuration: parseFloat(e.target.value) }))}
-                        className="w-full h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-[11px] mb-1.5">
-                        <span className="text-zinc-400">Перелистывание</span>
-                        <span className="font-bold text-emerald-400">{config.transitionDuration}s</span>
-                      </div>
-                      <input
-                        type="range" min="0.2" max="1.5" step="0.1"
-                        value={config.transitionDuration}
-                        onMouseDown={pushHistoryCheckpoint}
-                        onTouchStart={pushHistoryCheckpoint}
-                        onChange={(e) => setConfig((prev) => ({ ...prev, transitionDuration: parseFloat(e.target.value) }))}
-                        className="w-full h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                      />
-                    </div>
+              <div className="space-y-2 pt-2 border-t border-zinc-800/40">
+                <span className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-emerald-500" /> Тайминги {window.electron ? "MP4" : "WebM"}
+                </span>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] text-zinc-500 w-20">Показ ({config.slideDuration}s)</span>
+                    <input
+                      type="range" min="1" max="7" step="0.5"
+                      value={config.slideDuration}
+                      onMouseDown={pushHistoryCheckpoint}
+                      onTouchStart={pushHistoryCheckpoint}
+                      onChange={(e) => setConfig((prev) => ({ ...prev, slideDuration: parseFloat(e.target.value) }))}
+                      className="flex-1 h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] text-zinc-500 w-20">Смена ({config.transitionDuration}s)</span>
+                    <input
+                      type="range" min="0.2" max="1.5" step="0.1"
+                      value={config.transitionDuration}
+                      onMouseDown={pushHistoryCheckpoint}
+                      onTouchStart={pushHistoryCheckpoint}
+                      onChange={(e) => setConfig((prev) => ({ ...prev, transitionDuration: parseFloat(e.target.value) }))}
+                      className="flex-1 h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                    />
                   </div>
                 </div>
-              </>
+              </div>
             )}
             
-            <div className="space-y-3 font-sans pt-1 border-t border-zinc-800/80">
-              
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
-                  {config.showTiktokHud ? <Eye className="w-3.5 h-3.5 text-indigo-400" /> : <EyeOff className="w-3.5 h-3.5 text-zinc-500" />}
-                  Водяные знаки TikTok
-                </span>
-                <button
-                  onClick={() => {
-                    pushHistoryCheckpoint();
-                    setConfig((prev) => ({ ...prev, showTiktokHud: !prev.showTiktokHud }));
-                  }}
-                  className={`w-10 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${
-                    config.showTiktokHud ? "bg-indigo-600" : "bg-zinc-800"
+            <div className="flex items-center justify-between pt-2 border-t border-zinc-800/40">
+              <span className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
+                {config.showTiktokHud ? <Eye className="w-3.5 h-3.5 text-indigo-400" /> : <EyeOff className="w-3.5 h-3.5 text-zinc-500" />}
+                Водяные знаки TikTok
+              </span>
+              <button
+                onClick={() => {
+                  pushHistoryCheckpoint();
+                  setConfig((prev) => ({ ...prev, showTiktokHud: !prev.showTiktokHud }));
+                }}
+                className={`w-8 h-4.5 rounded-full p-0.5 transition-colors cursor-pointer ${
+                  config.showTiktokHud ? "bg-indigo-600" : "bg-zinc-800"
+                }`}
+              >
+                <div
+                  className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${
+                    config.showTiktokHud ? "translate-x-3.5" : "translate-x-0"
                   }`}
-                >
-                  <div
-                    className={`w-5 h-5 rounded-full bg-white transition-transform ${
-                      config.showTiktokHud ? "translate-x-4" : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
+                />
+              </button>
             </div>
             
-            <div className="space-y-2 font-sans border-t border-zinc-800/80 pt-3">
+            <div className="space-y-2 pt-2 border-t border-zinc-800/40">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
                   <Sliders className="w-3.5 h-3.5 text-emerald-400" />
@@ -907,13 +882,13 @@ export default function App() {
                       handleUpdateSlide(slide.id, { swipeHintText: "ЛИСТАЙ ВЛЕВО / ВПРАВО 👉" });
                     }
                   }}
-                  className={`w-10 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${
+                  className={`w-8 h-4.5 rounded-full p-0.5 transition-colors cursor-pointer ${
                     currentSlide?.swipeHintText ? "bg-emerald-600" : "bg-zinc-800"
                   }`}
                 >
                   <div
-                    className={`w-5 h-5 rounded-full bg-white transition-transform ${
-                      currentSlide?.swipeHintText ? "translate-x-4" : "translate-x-0"
+                    className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${
+                      currentSlide?.swipeHintText ? "translate-x-3.5" : "translate-x-0"
                     }`}
                   />
                 </button>
@@ -924,31 +899,29 @@ export default function App() {
                   value={currentSlide.swipeHintText}
                   onChange={(e) => handleUpdateSlide(currentSlide.id, { swipeHintText: e.target.value })}
                   onFocus={pushHistoryCheckpoint}
-                  className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 py-1.5 px-2.5 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-600 hover:border-zinc-700 transition"
+                  className="w-full bg-zinc-950 border border-zinc-800/50 text-zinc-200 py-1.5 px-2.5 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-600 hover:border-zinc-700 transition"
                   placeholder="Текст надписи..."
                 />
               )}
             </div>
             
-            <div className="space-y-2 font-sans border-t border-zinc-800/80 pt-3.5">
-              <span className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5 mb-1.5">
+            <div className="flex items-center justify-between pt-2 border-t border-zinc-800/40">
+              <span className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
                 <FileCode className="w-3.5 h-3.5 text-indigo-400" />
-                Резервная копия проекта (JSON)
+                Проект
               </span>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={handleExportProject}
-                  className="py-1.5 px-2 bg-zinc-950 hover:bg-zinc-800/50 border border-zinc-800 text-zinc-300 hover:text-white font-bold text-[10px] rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                  className="py-1 px-2 bg-zinc-800 hover:bg-violet-600 rounded-md text-zinc-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 text-[10px]"
                 >
-                  <Download className="w-3.5 h-3.5 text-zinc-500" />
-                  Экспорт
+                  <Download className="w-3.5 h-3.5" /> Экспорт
                 </button>
                 <button
                   onClick={() => projectFileInputRef.current?.click()}
-                  className="py-1.5 px-2 bg-zinc-950 hover:bg-zinc-800/50 border border-zinc-800 text-zinc-300 hover:text-white font-bold text-[10px] rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                  className="py-1 px-2 bg-zinc-800 hover:bg-violet-600 rounded-md text-zinc-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 text-[10px]"
                 >
-                  <Upload className="w-3.5 h-3.5 text-zinc-500" />
-                  Импорт
+                  <Upload className="w-3.5 h-3.5" /> Импорт
                 </button>
                 <input
                   type="file"
