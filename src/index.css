@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+@theme {
+  --color-zinc-850: #1f1f22;
+  --color-zinc-450: #8c8c93;
+  --color-violet-450: #9670f5;
+  --color-indigo-405: #7b7af4;
+}
+
 /* Embedded Inter Fonts */
 @font-face {
   font-family: 'Inter';
