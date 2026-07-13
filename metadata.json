@@ -1,0 +1,6 @@
+{
+  "name": "BookTok Carousel",
+  "description": "Интуитивный редактор книжных каруселей и слайд-шоу для TikTok с ИИ-генератором хуков, автоматической палитрой по обложке книги и экспортом в JPG и MP4.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
