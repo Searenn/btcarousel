@@ -885,20 +885,7 @@ export default function CarouselPreview({
             </div>
           )}
           
-          <div className="absolute inset-x-0 bottom-14 flex items-center justify-center gap-1.5 z-10 pointer-events-none">
-            {config.slides.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveSlideIdx(idx);
-                }}
-                className={`h-1.5 transition-all duration-300 rounded-full cursor-pointer pointer-events-auto ${
-                  activeSlideIdx === idx ? "w-6 bg-white" : "w-1.5 bg-white/40"
-                }`}
-              />
-            ))}
-          </div>
+
         </div>
       </div>
       
@@ -1088,7 +1075,7 @@ export default function CarouselPreview({
             </button>
           </div>
         </div>
-        <div className="flex gap-2.5 pb-2 overflow-x-auto scrollbar-none">
+        <div className="flex gap-2.5 pb-2 overflow-x-auto carousel-slide-strip" style={{ maxWidth: '100%' }}>
           {config.slides.map((s, idx) => {
             const isActive = activeSlideIdx === idx;
             const slideBg = s.bgColor || p.bg;
@@ -1114,7 +1101,7 @@ export default function CarouselPreview({
                   }
                 }}
                 onClick={() => setActiveSlideIdx(idx)}
-                className={`relative flex-shrink-0 w-16 aspect-[9/16] rounded-xl border-2 transition-all cursor-pointer group flex flex-col justify-between overflow-hidden ${
+                className={`relative flex-shrink-0 w-20 aspect-[9/16] rounded-xl border-2 transition-all cursor-pointer group flex flex-col justify-between overflow-hidden ${
                   isActive ? "border-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.3)] bg-violet-950/20" : "border-zinc-800 bg-zinc-950/50 hover:border-zinc-700"
                 }`}
                 style={{

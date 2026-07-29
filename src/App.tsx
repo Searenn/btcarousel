@@ -145,6 +145,7 @@ const loadInitialConfig = (): CarouselConfig => {
           selectedGenre: parsed.selectedGenre || "romantic",
           slideDuration: parsed.slideDuration ?? 3,
           transitionDuration: parsed.transitionDuration ?? 0.6,
+          useUniformDuration: parsed.useUniformDuration ?? true,
           ratio: (parsed.ratio === '3:4' ? '3:4' : '9:16') as '9:16' | '3:4',
           showTiktokHud: parsed.showTiktokHud ?? true,
           showGrid: parsed.showGrid ?? false,
@@ -161,6 +162,7 @@ const loadInitialConfig = (): CarouselConfig => {
     selectedGenre: "romantic",
     slideDuration: 3,
     transitionDuration: 0.6,
+    useUniformDuration: true,
     ratio: "9:16",
     showTiktokHud: true,
     showGrid: false,
@@ -418,6 +420,7 @@ export default function App() {
             selectedGenre: parsed.selectedGenre || config.selectedGenre,
             slideDuration: parsed.slideDuration ?? config.slideDuration,
             transitionDuration: parsed.transitionDuration ?? config.transitionDuration,
+            useUniformDuration: parsed.useUniformDuration ?? true,
             ratio: parsed.ratio === '3:4' ? '3:4' : '9:16',
             showTiktokHud: parsed.showTiktokHud ?? config.showTiktokHud,
             showGrid: parsed.showGrid ?? config.showGrid,
@@ -818,17 +821,56 @@ export default function App() {
                   <Clock className="w-3.5 h-3.5 text-emerald-500" /> Тайминги {window.electron ? "MP4" : "WebM"}
                 </span>
                 <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] text-zinc-500 w-20">Показ ({config.slideDuration}s)</span>
+                  {/* Uniform duration toggle */}
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
-                      type="range" min="1" max="7" step="0.5"
-                      value={config.slideDuration}
-                      onMouseDown={pushHistoryCheckpoint}
-                      onTouchStart={pushHistoryCheckpoint}
-                      onChange={(e) => setConfig((prev) => ({ ...prev, slideDuration: parseFloat(e.target.value) }))}
-                      className="flex-1 h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                      type="checkbox"
+                      checked={config.useUniformDuration}
+                      onChange={() => {
+                        pushHistoryCheckpoint();
+                        setConfig((prev) => ({ ...prev, useUniformDuration: !prev.useUniformDuration }));
+                      }}
+                      className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"
                     />
-                  </div>
+                    <span className="text-[10px] text-zinc-400 font-bold">Для всех одинаково</span>
+                  </label>
+                  
+                  {config.useUniformDuration ? (
+                    /* Single slider for all slides */
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] text-zinc-500 w-20">Показ ({config.slideDuration}s)</span>
+                      <input
+                        type="range" min="1" max="7" step="0.5"
+                        value={config.slideDuration}
+                        onMouseDown={pushHistoryCheckpoint}
+                        onTouchStart={pushHistoryCheckpoint}
+                        onChange={(e) => setConfig((prev) => ({ ...prev, slideDuration: parseFloat(e.target.value) }))}
+                        className="flex-1 h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                      />
+                    </div>
+                  ) : (
+                    /* Per-slide duration sliders */
+                    <div className="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(139,92,246,0.3) transparent' }}>
+                      {config.slides.map((slide, idx) => {
+                        const dur = slide.slideDuration ?? config.slideDuration;
+                        return (
+                          <div key={slide.id} className="flex items-center gap-2">
+                            <span className={`text-[10px] font-bold w-5 text-center flex-shrink-0 ${activeSlideIdx === idx ? 'text-violet-400' : 'text-zinc-500'}`}>{idx + 1}</span>
+                            <input
+                              type="range" min="1" max="7" step="0.5"
+                              value={dur}
+                              onMouseDown={pushHistoryCheckpoint}
+                              onTouchStart={pushHistoryCheckpoint}
+                              onChange={(e) => handleUpdateSlide(slide.id, { slideDuration: parseFloat(e.target.value) })}
+                              className="flex-1 h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                            />
+                            <span className="text-[9px] font-mono text-zinc-500 w-6 text-right flex-shrink-0">{dur}s</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  
                   <div className="flex items-center gap-3">
                     <span className="text-[10px] text-zinc-500 w-20">Смена ({config.transitionDuration}s)</span>
                     <input

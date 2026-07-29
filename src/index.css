@@ -133,4 +133,22 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-
+/* Carousel slide strip scrollbar */
+.carousel-slide-strip {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.35) transparent;
+}
+.carousel-slide-strip::-webkit-scrollbar {
+  height: 5px;
+}
+.carousel-slide-strip::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+.carousel-slide-strip::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.35);
+  border-radius: 4px;
+}
+.carousel-slide-strip::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.6);
+}

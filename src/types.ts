@@ -25,6 +25,7 @@ export interface Slide {
   backgroundY?: number;    
   backgroundOpacity?: number; 
   swipeHintText?: string | null; 
+  slideDuration?: number; 
 }
 export interface ColorPalette {
   bg: string;       
@@ -63,6 +64,7 @@ export interface CarouselConfig {
   selectedGenre: PresetThemeId; 
   slideDuration: number; 
   transitionDuration: number; 
+  useUniformDuration: boolean; 
   ratio: RatioId; 
   showTiktokHud: boolean; 
   showGrid?: boolean; 

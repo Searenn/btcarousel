@@ -70,11 +70,34 @@ export async function exportCarouselToMp4(
   canvas.height = height;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not get 2D context");
-  const slideDuration = config.slideDuration || 3;
+
   const transitionDuration = config.transitionDuration || 0.6;
   const numSlides = config.slides.length;
-  const totalDuration = (numSlides * slideDuration) + ((numSlides - 1) * transitionDuration);
+
+  // Build per-slide durations array
+  const slideDurations: number[] = config.slides.map((slide) => {
+    if (!config.useUniformDuration && slide.slideDuration != null) {
+      return slide.slideDuration;
+    }
+    return config.slideDuration || 3;
+  });
+
+  // Calculate cumulative segment boundaries
+  // Timeline: [slide0_show] [transition0->1] [slide1_show] [transition1->2] [slide2_show] ...
+  // segmentStarts[i] = time when slide i starts showing
+  // segmentStarts[i] + slideDurations[i] = time when transition from i to i+1 starts
+  const segmentStarts: number[] = [];
+  let currentTime = 0;
+  for (let i = 0; i < numSlides; i++) {
+    segmentStarts.push(currentTime);
+    currentTime += slideDurations[i];
+    if (i < numSlides - 1) {
+      currentTime += transitionDuration;
+    }
+  }
+  const totalDuration = currentTime;
   const totalFrames = Math.ceil(totalDuration * fps);
+
   const stream = canvas.captureStream(fps);
   let options = { mimeType: "video/webm;codecs=vp9,opus" };
   if (!MediaRecorder.isTypeSupported(options.mimeType)) {
@@ -102,26 +125,44 @@ export async function exportCarouselToMp4(
   for (let frameNum = 0; frameNum < totalFrames; frameNum++) {
     const sec = frameNum / fps;
     ctx.clearRect(0, 0, width, height);
-    const stageDuration = slideDuration + transitionDuration;
-    let slideIdx = Math.floor(sec / stageDuration);
-    if (slideIdx >= numSlides) {
-      slideIdx = numSlides - 1;
+
+    // Find which slide/transition we're in using cumulative boundaries
+    let slideIdx = numSlides - 1; // default to last slide
+    let inTransition = false;
+    let transProgress = 0;
+
+    for (let i = 0; i < numSlides; i++) {
+      const showEnd = segmentStarts[i] + slideDurations[i];
+      if (sec < showEnd) {
+        // We're showing slide i
+        slideIdx = i;
+        inTransition = false;
+        break;
+      }
+      if (i < numSlides - 1) {
+        const transEnd = showEnd + transitionDuration;
+        if (sec < transEnd) {
+          // We're in transition from slide i to slide i+1
+          slideIdx = i;
+          inTransition = true;
+          transProgress = (sec - showEnd) / transitionDuration;
+          break;
+        }
+      }
     }
-    const stageStart = slideIdx * stageDuration;
-    const stageTransitionStart = stageStart + slideDuration;
-    if (sec < stageTransitionStart || slideIdx === numSlides - 1) {
-      ctx.drawImage(slideImages[slideIdx], 0, 0, width, height);
-    } else {
-      const localTransSec = sec - stageTransitionStart;
-      const progress = Math.min(1, localTransSec / transitionDuration);
-      const easeProgress = progress < 0.5
-        ? 2 * progress * progress
-        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+    if (inTransition && slideIdx < numSlides - 1) {
+      const easeProgress = transProgress < 0.5
+        ? 2 * transProgress * transProgress
+        : 1 - Math.pow(-2 * transProgress + 2, 2) / 2;
       const offsetX1 = -easeProgress * width;
       const offsetX2 = (1 - easeProgress) * width;
       ctx.drawImage(slideImages[slideIdx], offsetX1, 0, width, height);
       ctx.drawImage(slideImages[slideIdx + 1], offsetX2, 0, width, height);
+    } else {
+      ctx.drawImage(slideImages[slideIdx], 0, 0, width, height);
     }
+
     progressCallback(Math.round((frameNum / totalFrames) * 100));
     const expectedElapsed = (frameNum + 1) * (1000 / fps);
     const actualElapsed = performance.now() - startTime;
