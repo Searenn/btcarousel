@@ -556,7 +556,8 @@ export default function App() {
       id: `slide-${Date.now()}`,
       blocks: newBlocks,
       backgroundImage: template.backgroundImage || null,
-      bgColor: null,
+      backgroundOpacity: template.backgroundOpacity,
+      bgColor: template.bgColor || null,
     };
     setConfig((prev) => ({
       ...prev,

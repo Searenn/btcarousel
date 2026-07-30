@@ -184,6 +184,8 @@ export default function SlideTemplates({ onApplyTemplate, onApplyUserTemplate, c
       palette: { ...config.palette },
       selectedGenre: config.selectedGenre,
       backgroundImage: saveWithBg ? currentSlide.backgroundImage : null,
+      backgroundOpacity: currentSlide.backgroundOpacity,
+      bgColor: currentSlide.bgColor,
       customFontFamily: config.customFontFamily,
     };
     setUserTemplates(prev => [newTemplate, ...prev]);

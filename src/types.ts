@@ -87,6 +87,8 @@ export interface UserTemplate {
   palette: ColorPalette;
   selectedGenre: PresetThemeId;
   backgroundImage?: string | null;
+  backgroundOpacity?: number;
+  bgColor?: string | null;
   customFontFamily?: string;
 }
 declare global {
