@@ -51,18 +51,14 @@ export interface VideoExportResult {
   blob: Blob;
   mimeType: string;
   extension: string;
-  isMp4: boolean;
 }
 
 /**
- * Checks which video codecs the browser supports for MediaRecorder.
- * Returns info about MP4 and WebM support.
+ * Checks whether the browser supports MP4 (H.264) recording via MediaRecorder.
  */
 export function checkVideoCodecSupport(): {
   mp4Supported: boolean;
-  webmSupported: boolean;
   bestMimeType: string;
-  bestExtension: string;
 } {
   const mp4Codecs = [
     "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
@@ -70,41 +66,14 @@ export function checkVideoCodecSupport(): {
     "video/mp4;codecs=avc1",
     "video/mp4",
   ];
-  const webmCodecs = [
-    "video/webm;codecs=vp9,opus",
-    "video/webm;codecs=vp8,opus",
-    "video/webm;codecs=vp9",
-    "video/webm;codecs=vp8",
-    "video/webm",
-  ];
 
-  let mp4Supported = false;
-  let bestMp4 = "";
   for (const codec of mp4Codecs) {
     if (MediaRecorder.isTypeSupported(codec)) {
-      mp4Supported = true;
-      bestMp4 = codec;
-      break;
+      return { mp4Supported: true, bestMimeType: codec };
     }
   }
 
-  let webmSupported = false;
-  let bestWebm = "";
-  for (const codec of webmCodecs) {
-    if (MediaRecorder.isTypeSupported(codec)) {
-      webmSupported = true;
-      bestWebm = codec;
-      break;
-    }
-  }
-
-  if (mp4Supported) {
-    return { mp4Supported, webmSupported, bestMimeType: bestMp4, bestExtension: "mp4" };
-  }
-  if (webmSupported) {
-    return { mp4Supported, webmSupported, bestMimeType: bestWebm, bestExtension: "webm" };
-  }
-  return { mp4Supported: false, webmSupported: false, bestMimeType: "video/webm", bestExtension: "webm" };
+  return { mp4Supported: false, bestMimeType: "" };
 }
 
 export async function exportCarouselToMp4(
@@ -159,15 +128,15 @@ export async function exportCarouselToMp4(
   const totalDuration = currentTime;
   const totalFrames = Math.ceil(totalDuration * fps);
 
-  // Choose the best available codec: prefer MP4, fall back to WebM
+  // MP4 only — no fallback
   const codecInfo = checkVideoCodecSupport();
-  const chosenMimeType = codecInfo.bestMimeType;
-  const chosenExtension = codecInfo.bestExtension;
-  const isMp4 = codecInfo.mp4Supported;
+  if (!codecInfo.mp4Supported) {
+    throw new Error("MP4_CODEC_UNSUPPORTED");
+  }
 
   const stream = canvas.captureStream(fps);
   const recordedChunks: Blob[] = [];
-  const recorder = new MediaRecorder(stream, { mimeType: chosenMimeType });
+  const recorder = new MediaRecorder(stream, { mimeType: codecInfo.bestMimeType });
   recorder.ondataavailable = (event) => {
     if (event.data && event.data.size > 0) {
       recordedChunks.push(event.data);
@@ -175,9 +144,8 @@ export async function exportCarouselToMp4(
   };
   const recordingPromise = new Promise<VideoExportResult>((resolve, reject) => {
     recorder.onstop = () => {
-      const blobType = isMp4 ? "video/mp4" : "video/webm";
-      const blob = new Blob(recordedChunks, { type: blobType });
-      resolve({ blob, mimeType: blobType, extension: chosenExtension, isMp4 });
+      const blob = new Blob(recordedChunks, { type: "video/mp4" });
+      resolve({ blob, mimeType: "video/mp4", extension: "mp4" });
     };
     recorder.onerror = (e) => reject(e);
   });

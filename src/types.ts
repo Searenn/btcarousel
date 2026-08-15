@@ -95,7 +95,7 @@ declare global {
   interface Window {
     electron?: {
       saveImagesDialog: (images: string[]) => Promise<{ success: boolean; error?: string; dirPath?: string }>;
-      saveVideo: (webmBase64: string) => Promise<{ success: boolean; error?: string; filePath?: string; warning?: string }>;
+      saveVideo: (mp4Base64: string) => Promise<{ success: boolean; error?: string; filePath?: string; warning?: string }>;
       saveUserTemplates: (templates: UserTemplate[]) => Promise<{ success: boolean; error?: string }>;
       loadUserTemplates: () => Promise<{ success: boolean; error?: string; templates: UserTemplate[] }>;
       saveCarouselConfig: (config: CarouselConfig) => Promise<{ success: boolean; error?: string }>;

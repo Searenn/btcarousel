@@ -489,7 +489,7 @@ export default function App() {
           if (saveRes.success) {
             showStatusNotification(`✅ Видеоролик MP4 успешно смонтирован и сохранен в: ${saveRes.filePath}`);
           } else if (saveRes.error !== 'Cancelled') {
-            alert(`Ошибка при транскодировании видео: ${saveRes.error}`);
+            alert(`Ошибка при сохранении видео: ${saveRes.error}`);
           }
           setExportingMp4(false);
         };
@@ -497,21 +497,21 @@ export default function App() {
       } else {
         const url = URL.createObjectURL(result.blob);
         const link = document.createElement("a");
-        link.download = `TikTok_book_carousel.${result.extension}`;
+        link.download = "TikTok_book_carousel.mp4";
         link.href = url;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        if (result.isMp4) {
-          showStatusNotification("✅ Видеоролик (MP4) успешно смонтирован и скачан!");
-        } else {
-          showStatusNotification("⚠️ Видео сохранено в формате WebM (ваш браузер не поддерживает MP4-кодек H.264). Для MP4 используйте Chrome/Edge на Windows или macOS. Файл WebM можно конвертировать через cloudconvert.com или HandBrake.");
-        }
+        showStatusNotification("✅ Видеоролик MP4 успешно смонтирован и скачан!");
         setExportingMp4(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Произошел технический сбой при экспорте видео.");
+      if (err?.message === "MP4_CODEC_UNSUPPORTED") {
+        alert("⚠️ Ваш браузер не поддерживает запись видео в формате MP4 (H.264).\n\nЧто делать:\n• Используйте Google Chrome или Microsoft Edge (версия 121+) на Windows или macOS\n• Firefox и Safari пока не поддерживают запись MP4 через MediaRecorder\n• В десктоп-приложении этот кодек всегда доступен");
+      } else {
+        alert("Произошел технический сбой при экспорте видео.");
+      }
       setExportingMp4(false);
     }
   };
@@ -644,7 +644,7 @@ export default function App() {
                 ) : (
                   <>
                     <Film className="w-4 h-4" />
-                    {window.electron ? "Скачать MP4 видео" : "Скачать WebM видео"}
+                    Скачать MP4 видео
                   </>
                 )}
               </button>
@@ -823,7 +823,7 @@ export default function App() {
             {config.ratio === '9:16' && (
               <div className="space-y-2 pt-2 border-t border-zinc-800/40">
                 <span className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-emerald-500" /> Тайминги {window.electron ? "MP4" : "WebM"}
+                  <Clock className="w-3.5 h-3.5 text-emerald-500" /> Тайминги MP4
                 </span>
                 <div className="flex flex-col gap-2">
                   {/* Uniform duration toggle */}
