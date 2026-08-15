@@ -69,8 +69,8 @@ export default function CarouselPreview({
       const deltaY = moveEv.clientY - startY;
       let newX = originalX + (deltaX / zoom);
       let newY = originalY + (deltaY / zoom);
-      const limitX = Math.max(0, (W * (zoom - 1)) / (2 * zoom));
-      const limitY = Math.max(0, (H * (zoom - 1)) / (2 * zoom));
+      const limitX = (W * 0.8) / zoom;
+      const limitY = (H * 0.8) / zoom;
       newX = Math.max(-limitX, Math.min(limitX, newX));
       newY = Math.max(-limitY, Math.min(limitY, newY));
       onUpdateSlide(currentSlide.id, {
@@ -485,12 +485,12 @@ export default function CarouselPreview({
       }, 800);
       const currentZoom = slide.backgroundZoom || 1;
       const delta = -e.deltaY * 0.003;
-      const newZoom = Math.max(1, Math.min(5, currentZoom + delta));
+      const newZoom = Math.max(0.2, Math.min(5, currentZoom + delta));
       const dims = getRatioDimensions(config.ratio);
       const W = dims.previewW;
       const H = dims.previewH;
-      const limitX = Math.max(0, (W * (newZoom - 1)) / (2 * newZoom));
-      const limitY = Math.max(0, (H * (newZoom - 1)) / (2 * newZoom));
+      const limitX = (W * 0.8) / newZoom;
+      const limitY = (H * 0.8) / newZoom;
       let newX = slide.backgroundX || 0;
       let newY = slide.backgroundY || 0;
       newX = Math.max(-limitX, Math.min(limitX, newX));

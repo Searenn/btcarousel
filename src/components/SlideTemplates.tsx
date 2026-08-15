@@ -110,6 +110,12 @@ const SLIDE_TEMPLATES: SlideTemplate[] = [
       },
     ],
   },
+  {
+    id: "empty_bg",
+    name: "Только фон",
+    icon: "🖼️",
+    blocks: [],
+  },
 ];
 const USER_TEMPLATES_KEY = "booktok_user_templates";
 function loadUserTemplates(): UserTemplate[] {
