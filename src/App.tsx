@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import JSZip from "jszip";
 import { CarouselConfig, Slide, PresetThemeId, ColorPalette, TextBlock, getRatioDimensions, UserTemplate } from "./types";
 import { GENRE_PRESETS, injectGenreFont, injectCustomGoogleFont } from "./presets";
-import { exportCarouselToJpg, exportCarouselToMp4 } from "./utils/videoExporter";
+import { exportCarouselToJpg, exportCarouselToMp4, checkVideoCodecSupport } from "./utils/videoExporter";
 import ColorPicker from "./components/ColorPicker";
 import CarouselPreview from "./components/CarouselPreview";
 import SlideView from "./components/SlideView";
@@ -480,7 +480,7 @@ export default function App() {
     setExportingMp4(true);
     setMp4Progress(0);
     try {
-      const videoBlob = await exportCarouselToMp4(configRef.current, (p) => setMp4Progress(p));
+      const result = await exportCarouselToMp4(configRef.current, (p) => setMp4Progress(p));
       if (window.electron) {
         const reader = new FileReader();
         reader.onloadend = async () => {
@@ -493,16 +493,20 @@ export default function App() {
           }
           setExportingMp4(false);
         };
-        reader.readAsDataURL(videoBlob);
+        reader.readAsDataURL(result.blob);
       } else {
-        const url = URL.createObjectURL(videoBlob);
+        const url = URL.createObjectURL(result.blob);
         const link = document.createElement("a");
-        link.download = "TikTok_book_carousel.webm";
+        link.download = `TikTok_book_carousel.${result.extension}`;
         link.href = url;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        showStatusNotification("✅ Видеоролик (WebM) успешно смонтирован и скачан!");
+        if (result.isMp4) {
+          showStatusNotification("✅ Видеоролик (MP4) успешно смонтирован и скачан!");
+        } else {
+          showStatusNotification("⚠️ Видео сохранено в формате WebM (ваш браузер не поддерживает MP4-кодек H.264). Для MP4 используйте Chrome/Edge на Windows или macOS. Файл WebM можно конвертировать через cloudconvert.com или HandBrake.");
+        }
         setExportingMp4(false);
       }
     } catch (err) {

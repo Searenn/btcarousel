@@ -972,7 +972,7 @@ export default function CarouselPreview({
               <div className="bg-zinc-900/95 backdrop-blur-md border border-zinc-800 px-3 py-1.5 rounded-lg shadow-2xl flex items-center gap-3 text-white">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[9px] text-zinc-400 font-bold whitespace-nowrap">Прозр.</span>
-                  <input type="range" min="5" max="100" step="5" value={selectedBlock.cardBgOpacity ?? 78} onMouseDown={onStartInteraction} onTouchStart={onStartInteraction} onChange={(e) => updateBlock(selectedBlock.id, { cardBgOpacity: parseInt(e.target.value) })} className="w-16 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-violet-500" />
+                  <input type="range" min="0" max="100" step="5" value={selectedBlock.cardBgOpacity ?? 78} onMouseDown={onStartInteraction} onTouchStart={onStartInteraction} onChange={(e) => updateBlock(selectedBlock.id, { cardBgOpacity: parseInt(e.target.value) })} className="w-16 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-violet-500" />
                   <span className="text-[9px] font-mono text-zinc-400 w-6 text-right">{selectedBlock.cardBgOpacity ?? 78}%</span>
                 </div>
                 <div className="w-[1px] h-3 bg-zinc-800" />
