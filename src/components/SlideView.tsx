@@ -166,18 +166,23 @@ export default function SlideView({
       {slide?.backgroundImage && (
         <div
           onPointerDown={onBackgroundPointerDown}
-          className="absolute inset-0 select-none"
+          className="absolute inset-0 select-none overflow-hidden flex items-center justify-center"
           style={{
-            backgroundImage: `url(${slide.backgroundImage})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            transform: `scale(${slide.backgroundZoom || 1}) translate(${(slide.backgroundX || 0) * s}px, ${(slide.backgroundY || 0) * s}px)`,
-            transformOrigin: "center center",
             cursor: isExporting ? "default" : "all-scroll",
             pointerEvents: isExporting ? "none" : "auto",
-            opacity: (slide.backgroundOpacity ?? 100) / 100,
           }}
-        />
+        >
+          <img
+            src={slide.backgroundImage}
+            alt=""
+            className="min-w-full min-h-full w-auto h-auto max-w-none max-h-none flex-shrink-0 select-none pointer-events-none"
+            style={{
+              transform: `scale(${slide.backgroundZoom || 1}) translate(${(slide.backgroundX || 0) * s}px, ${(slide.backgroundY || 0) * s}px)`,
+              transformOrigin: "center center",
+              opacity: (slide.backgroundOpacity ?? 100) / 100,
+            }}
+          />
+        </div>
       )}
       
       {config.selectedGenre === "gold_magic" && (
