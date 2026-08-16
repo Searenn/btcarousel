@@ -76,9 +76,16 @@ export function checkVideoCodecSupport(): {
   return { mp4Supported: false, bestMimeType: "" };
 }
 
+export interface AudioOptions {
+  audioBuffer: ArrayBuffer;
+  startOffset: number; // seconds into the audio to start from
+  volume: number; // 0..1
+}
+
 export async function exportCarouselToMp4(
   config: CarouselConfig,
-  progressCallback: (prog: number) => void
+  progressCallback: (prog: number) => void,
+  audioOptions?: AudioOptions | null
 ): Promise<VideoExportResult> {
   const dims = getRatioDimensions(config.ratio);
   const width = dims.exportW;
@@ -134,9 +141,38 @@ export async function exportCarouselToMp4(
     throw new Error("MP4_CODEC_UNSUPPORTED");
   }
 
-  const stream = canvas.captureStream(fps);
+  // Set up audio if provided
+  let audioCtx: AudioContext | null = null;
+  let audioSource: AudioBufferSourceNode | null = null;
+  let gainNode: GainNode | null = null;
+  let audioDest: MediaStreamAudioDestinationNode | null = null;
+
+  if (audioOptions && audioOptions.audioBuffer.byteLength > 0) {
+    audioCtx = new AudioContext();
+    const decodedBuffer = await audioCtx.decodeAudioData(audioOptions.audioBuffer.slice(0));
+    audioDest = audioCtx.createMediaStreamDestination();
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = audioOptions.volume;
+    audioSource = audioCtx.createBufferSource();
+    audioSource.buffer = decodedBuffer;
+    audioSource.connect(gainNode);
+    gainNode.connect(audioDest);
+  }
+
+  // Combine video + audio tracks
+  const videoStream = canvas.captureStream(fps);
+  let combinedStream: MediaStream;
+  if (audioDest) {
+    combinedStream = new MediaStream([
+      ...videoStream.getVideoTracks(),
+      ...audioDest.stream.getAudioTracks(),
+    ]);
+  } else {
+    combinedStream = videoStream;
+  }
+
   const recordedChunks: Blob[] = [];
-  const recorder = new MediaRecorder(stream, { mimeType: codecInfo.bestMimeType });
+  const recorder = new MediaRecorder(combinedStream, { mimeType: codecInfo.bestMimeType });
   recorder.ondataavailable = (event) => {
     if (event.data && event.data.size > 0) {
       recordedChunks.push(event.data);
@@ -150,6 +186,13 @@ export async function exportCarouselToMp4(
     recorder.onerror = (e) => reject(e);
   });
   recorder.start();
+
+  // Start audio playback from the specified offset
+  if (audioSource && audioCtx) {
+    const offset = audioOptions?.startOffset || 0;
+    audioSource.start(audioCtx.currentTime, offset);
+  }
+
   const startTime = performance.now();
   for (let frameNum = 0; frameNum < totalFrames; frameNum++) {
     const sec = frameNum / fps;
@@ -202,6 +245,15 @@ export async function exportCarouselToMp4(
       await new Promise((resolve) => setTimeout(resolve, 0));
     }
   }
+
+  // Stop audio and clean up
+  if (audioSource) {
+    try { audioSource.stop(); } catch (_) { /* already stopped */ }
+  }
+  if (audioCtx) {
+    await audioCtx.close();
+  }
+
   recorder.stop();
   return recordingPromise;
 }

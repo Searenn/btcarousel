@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import JSZip from "jszip";
 import { CarouselConfig, Slide, PresetThemeId, ColorPalette, TextBlock, getRatioDimensions, UserTemplate } from "./types";
 import { GENRE_PRESETS, injectGenreFont, injectCustomGoogleFont } from "./presets";
-import { exportCarouselToJpg, exportCarouselToMp4, checkVideoCodecSupport } from "./utils/videoExporter";
+import { exportCarouselToJpg, exportCarouselToMp4, checkVideoCodecSupport, AudioOptions } from "./utils/videoExporter";
 import ColorPicker from "./components/ColorPicker";
 import CarouselPreview from "./components/CarouselPreview";
 import SlideView from "./components/SlideView";
@@ -29,7 +29,10 @@ import {
   Copy,
   Type,
   Camera,
-  FileCode
+  FileCode,
+  Music2,
+  Volume2,
+  X
 } from "lucide-react";
 const INITIAL_SLIDES: Slide[] = [
   {
@@ -265,6 +268,11 @@ export default function App() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const bgFileInputRef = useRef<HTMLInputElement>(null);
   const projectFileInputRef = useRef<HTMLInputElement>(null);
+  const audioFileInputRef = useRef<HTMLInputElement>(null);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [audioBuffer, setAudioBuffer] = useState<ArrayBuffer | null>(null);
+  const [audioStartOffset, setAudioStartOffset] = useState(0);
+  const [audioVolume, setAudioVolume] = useState(0.8);
   const currentSlide = config.slides[activeSlideIdx];
   useEffect(() => {
     const currentPreset = GENRE_PRESETS[config.selectedGenre];
@@ -480,7 +488,8 @@ export default function App() {
     setExportingMp4(true);
     setMp4Progress(0);
     try {
-      const result = await exportCarouselToMp4(configRef.current, (p) => setMp4Progress(p));
+      const audioOpts: AudioOptions | null = audioBuffer ? { audioBuffer: audioBuffer.slice(0), startOffset: audioStartOffset, volume: audioVolume } : null;
+      const result = await exportCarouselToMp4(configRef.current, (p) => setMp4Progress(p), audioOpts);
       if (window.electron) {
         const reader = new FileReader();
         reader.onloadend = async () => {
@@ -887,8 +896,71 @@ export default function App() {
                       className="flex-1 h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                     />
                   </div>
-                </div>
               </div>
+              
+              {/* Audio track */}
+              <div className="pt-2 border-t border-zinc-800/30">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
+                    <Music2 className="w-3.5 h-3.5 text-amber-400" /> Аудио
+                  </span>
+                  {audioFile ? (
+                    <button
+                      onClick={() => { setAudioFile(null); setAudioBuffer(null); setAudioStartOffset(0); }}
+                      className="p-1 hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer"
+                      title="Удалить аудио"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => audioFileInputRef.current?.click()}
+                      className="text-[9px] font-bold text-amber-400/70 hover:text-amber-300 transition-colors cursor-pointer"
+                    >
+                      + Добавить
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={audioFileInputRef}
+                  type="file"
+                  accept="audio/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setAudioFile(file);
+                    setAudioStartOffset(0);
+                    file.arrayBuffer().then((buf) => setAudioBuffer(buf));
+                    e.target.value = '';
+                  }}
+                />
+                {audioFile && (
+                  <div className="mt-1.5 space-y-1.5">
+                    <div className="text-[9px] text-zinc-500 truncate" title={audioFile.name}>🎵 {audioFile.name}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] text-zinc-500 w-16 flex-shrink-0">Начало ({audioStartOffset}s)</span>
+                      <input
+                        type="range" min="0" max="120" step="1"
+                        value={audioStartOffset}
+                        onChange={(e) => setAudioStartOffset(parseFloat(e.target.value))}
+                        className="flex-1 h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Volume2 className="w-3 h-3 text-zinc-500 flex-shrink-0" />
+                      <input
+                        type="range" min="0" max="1" step="0.05"
+                        value={audioVolume}
+                        onChange={(e) => setAudioVolume(parseFloat(e.target.value))}
+                        className="flex-1 h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                      />
+                      <span className="text-[9px] text-zinc-500 w-7 text-right flex-shrink-0">{Math.round(audioVolume * 100)}%</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
             )}
             
             <div className="flex items-center justify-between pt-2 border-t border-zinc-800/40">
