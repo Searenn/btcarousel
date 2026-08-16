@@ -32,7 +32,9 @@ import {
   FileCode,
   Music2,
   Volume2,
-  X
+  X,
+  Play,
+  Square
 } from "lucide-react";
 const INITIAL_SLIDES: Slide[] = [
   {
@@ -273,6 +275,36 @@ export default function App() {
   const [audioBuffer, setAudioBuffer] = useState<ArrayBuffer | null>(null);
   const [audioStartOffset, setAudioStartOffset] = useState(0);
   const [audioVolume, setAudioVolume] = useState(0.8);
+  const audioPreviewRef = useRef<{ ctx: AudioContext; source: AudioBufferSourceNode } | null>(null);
+  const [isAudioPreviewing, setIsAudioPreviewing] = useState(false);
+  const stopAudioPreview = () => {
+    if (audioPreviewRef.current) {
+      try { audioPreviewRef.current.source.stop(); } catch (_) {}
+      audioPreviewRef.current.ctx.close();
+      audioPreviewRef.current = null;
+    }
+    setIsAudioPreviewing(false);
+  };
+  const toggleAudioPreview = async () => {
+    if (isAudioPreviewing) { stopAudioPreview(); return; }
+    if (!audioBuffer) return;
+    try {
+      const ctx = new AudioContext();
+      const decoded = await ctx.decodeAudioData(audioBuffer.slice(0));
+      const source = ctx.createBufferSource();
+      source.buffer = decoded;
+      const gain = ctx.createGain();
+      gain.gain.value = audioVolume;
+      source.connect(gain);
+      gain.connect(ctx.destination);
+      source.start(ctx.currentTime, audioStartOffset);
+      source.onended = () => { stopAudioPreview(); };
+      audioPreviewRef.current = { ctx, source };
+      setIsAudioPreviewing(true);
+    } catch (e) {
+      console.warn('Audio preview failed:', e);
+    }
+  };
   const currentSlide = config.slides[activeSlideIdx];
   useEffect(() => {
     const currentPreset = GENRE_PRESETS[config.selectedGenre];
@@ -937,7 +969,20 @@ export default function App() {
                 />
                 {audioFile && (
                   <div className="mt-1.5 space-y-1.5">
-                    <div className="text-[9px] text-zinc-500 truncate" title={audioFile.name}>🎵 {audioFile.name}</div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={toggleAudioPreview}
+                        className={`p-1 rounded-md transition-colors cursor-pointer flex-shrink-0 ${
+                          isAudioPreviewing
+                            ? 'bg-amber-900/40 text-amber-400'
+                            : 'hover:bg-zinc-800 text-zinc-500 hover:text-amber-400'
+                        }`}
+                        title={isAudioPreviewing ? 'Остановить' : 'Прослушать'}
+                      >
+                        {isAudioPreviewing ? <Square className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5" />}
+                      </button>
+                      <div className="text-[9px] text-zinc-500 truncate" title={audioFile.name}>🎵 {audioFile.name}</div>
+                    </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[9px] text-zinc-500 w-16 flex-shrink-0">Начало ({audioStartOffset}s)</span>
                       <input
@@ -1065,6 +1110,9 @@ export default function App() {
             onRemoveSlide={handleRemoveSlide}
             onDuplicateSlide={handleDuplicateSlide}
             onStartInteraction={pushHistoryCheckpoint}
+            audioBuffer={audioBuffer}
+            audioStartOffset={audioStartOffset}
+            audioVolume={audioVolume}
           />
         </div>
         

@@ -16,7 +16,9 @@ import {
   AlignRight,
   AlignJustify,
   Grid3x3,
-  X
+  X,
+  Play,
+  Square
 } from "lucide-react";
 import { getContrastColorForAny } from "../utils/colorExtractor";
 import SlideView, { parseRichTokens, RichToken } from "./SlideView";
@@ -30,6 +32,9 @@ interface CarouselPreviewProps {
   onRemoveSlide: (slideId: string) => void;
   onDuplicateSlide: (slideId: string) => void;
   onStartInteraction?: () => void;
+  audioBuffer?: ArrayBuffer | null;
+  audioStartOffset?: number;
+  audioVolume?: number;
 }
 export default function CarouselPreview({
   config,
@@ -41,6 +46,9 @@ export default function CarouselPreview({
   onRemoveSlide,
   onDuplicateSlide,
   onStartInteraction,
+  audioBuffer,
+  audioStartOffset = 0,
+  audioVolume = 0.8,
 }: CarouselPreviewProps) {
   const currentSlide = config.slides[activeSlideIdx];
   const preset = GENRE_PRESETS[config.selectedGenre] || GENRE_PRESETS.romantic;
@@ -50,6 +58,106 @@ export default function CarouselPreview({
   const editInitialHtml = useRef<string>("");
   const [snapLines, setSnapLines] = useState<{ type: "x" | "y"; pos: number }[]>([]);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  // Video preview playback state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackTime, setPlaybackTime] = useState(0);
+  const playbackRaf = useRef<number | null>(null);
+  const playbackStart = useRef<number>(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
+
+  const getVideoTimeline = () => {
+    const transitionDuration = config.transitionDuration || 0.6;
+    const numSlides = config.slides.length;
+    const slideDurations = config.slides.map((slide) => {
+      if (!config.useUniformDuration && slide.slideDuration != null) return slide.slideDuration;
+      return config.slideDuration || 3;
+    });
+    const segmentStarts: number[] = [];
+    let t = 0;
+    for (let i = 0; i < numSlides; i++) {
+      segmentStarts.push(t);
+      t += slideDurations[i];
+      if (i < numSlides - 1) t += transitionDuration;
+    }
+    return { segmentStarts, slideDurations, totalDuration: t, transitionDuration, numSlides };
+  };
+
+  const getPlaybackState = (sec: number) => {
+    const { segmentStarts, slideDurations, transitionDuration, numSlides } = getVideoTimeline();
+    let slideIdx = numSlides - 1;
+    let inTransition = false;
+    let transProgress = 0;
+    for (let i = 0; i < numSlides; i++) {
+      const showEnd = segmentStarts[i] + slideDurations[i];
+      if (sec < showEnd) { slideIdx = i; inTransition = false; break; }
+      if (i < numSlides - 1) {
+        const transEnd = showEnd + transitionDuration;
+        if (sec < transEnd) { slideIdx = i; inTransition = true; transProgress = (sec - showEnd) / transitionDuration; break; }
+      }
+    }
+    return { slideIdx, inTransition, transProgress };
+  };
+
+  const stopPlayback = () => {
+    if (playbackRaf.current) cancelAnimationFrame(playbackRaf.current);
+    playbackRaf.current = null;
+    setIsPlaying(false);
+    setPlaybackTime(0);
+    if (audioSourceRef.current) {
+      try { audioSourceRef.current.stop(); } catch (_) {}
+      audioSourceRef.current = null;
+    }
+    if (audioCtxRef.current) {
+      audioCtxRef.current.close();
+      audioCtxRef.current = null;
+    }
+  };
+
+  const startPlayback = async () => {
+    setSelectedBlockId(null);
+    setEditingBlockId(null);
+    const { totalDuration } = getVideoTimeline();
+    setIsPlaying(true);
+    setPlaybackTime(0);
+    playbackStart.current = performance.now();
+
+    // Start audio if available
+    if (audioBuffer && audioBuffer.byteLength > 0) {
+      try {
+        const ctx = new AudioContext();
+        audioCtxRef.current = ctx;
+        const decoded = await ctx.decodeAudioData(audioBuffer.slice(0));
+        const source = ctx.createBufferSource();
+        source.buffer = decoded;
+        const gain = ctx.createGain();
+        gain.gain.value = audioVolume;
+        source.connect(gain);
+        gain.connect(ctx.destination);
+        source.start(ctx.currentTime, audioStartOffset);
+        audioSourceRef.current = source;
+      } catch (e) {
+        console.warn('Audio playback failed:', e);
+      }
+    }
+
+    const tick = () => {
+      const elapsed = (performance.now() - playbackStart.current) / 1000;
+      if (elapsed >= totalDuration) {
+        stopPlayback();
+        return;
+      }
+      setPlaybackTime(elapsed);
+      const { slideIdx } = getPlaybackState(elapsed);
+      setActiveSlideIdx(slideIdx);
+      playbackRaf.current = requestAnimationFrame(tick);
+    };
+    playbackRaf.current = requestAnimationFrame(tick);
+  };
+
+  useEffect(() => {
+    return () => { stopPlayback(); };
+  }, []);
   const handleBackgroundPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!currentSlide || !currentSlide.backgroundImage || !e.ctrlKey) return;
     onStartInteraction?.();
@@ -886,6 +994,50 @@ export default function CarouselPreview({
           )}
           
 
+          {/* Video preview transition overlay */}
+          {isPlaying && (() => {
+            const dims = getRatioDimensions(config.ratio);
+            const previewW = dims.previewW;
+            const scale = previewW / dims.exportW;
+            const pb = getPlaybackState(playbackTime);
+            const { totalDuration } = getVideoTimeline();
+            const progress = Math.min(playbackTime / totalDuration, 1);
+            if (pb.inTransition && pb.slideIdx < config.slides.length - 1) {
+              const easeProgress = pb.transProgress < 0.5
+                ? 2 * pb.transProgress * pb.transProgress
+                : 1 - Math.pow(-2 * pb.transProgress + 2, 2) / 2;
+              return (
+                <div className="absolute inset-0 z-[45] overflow-hidden rounded-[35px] pointer-events-none">
+                  <div style={{
+                    position: 'absolute', top: 0, left: 0,
+                    width: `${dims.exportW}px`, height: `${dims.exportH}px`,
+                    transform: `scale(${scale}) translateX(${-easeProgress * dims.exportW}px)`,
+                    transformOrigin: 'top left',
+                  }}>
+                    <SlideView slide={config.slides[pb.slideIdx]} config={config} width={dims.exportW} height={dims.exportH} isExporting={true} />
+                  </div>
+                  <div style={{
+                    position: 'absolute', top: 0, left: 0,
+                    width: `${dims.exportW}px`, height: `${dims.exportH}px`,
+                    transform: `scale(${scale}) translateX(${(1 - easeProgress) * dims.exportW}px)`,
+                    transformOrigin: 'top left',
+                  }}>
+                    <SlideView slide={config.slides[pb.slideIdx + 1]} config={config} width={dims.exportW} height={dims.exportH} isExporting={true} />
+                  </div>
+                  {/* Progress bar */}
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30 z-50">
+                    <div className="h-full bg-emerald-500 transition-none" style={{ width: `${progress * 100}%` }} />
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30 z-[45] rounded-b-[35px] overflow-hidden pointer-events-none">
+                <div className="h-full bg-emerald-500 transition-none" style={{ width: `${progress * 100}%` }} />
+              </div>
+            );
+          })()}
+
         </div>
       </div>
       
@@ -988,6 +1140,19 @@ export default function CarouselPreview({
       })()}
       
       <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+        {config.ratio === '9:16' && (
+          <button
+            onClick={(e) => { e.stopPropagation(); isPlaying ? stopPlayback() : startPlayback(); }}
+            className={`p-2 border rounded-xl transition cursor-pointer ${
+              isPlaying
+                ? 'bg-rose-950/50 border-rose-700 text-rose-400 hover:bg-rose-900/50'
+                : 'bg-emerald-950/30 hover:bg-emerald-900/40 border-emerald-800/50 text-emerald-400'
+            }`}
+            title={isPlaying ? 'Остановить предпросмотр' : 'Предпросмотр видео'}
+          >
+            {isPlaying ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+          </button>
+        )}
         <button
           onClick={handlePrev}
           disabled={activeSlideIdx === 0}
