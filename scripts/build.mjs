@@ -5,7 +5,14 @@ import { fileURLToPath } from 'node:url';
 
 const root = new URL('../', import.meta.url);
 const baseAsset = 'assets/index-CXyA2O3S-studio-v7.js';
-const outputAsset = 'assets/btcarousel-studio-v9.js';
+const outputAsset = 'assets/btcarousel-studio-v10.js';
+
+export async function buildStyles() {
+  const original=await readFile(new URL('assets/index-DbMotyE0.css',root),'utf8');
+  const selector='[contenteditable] span[style*=background-color]';
+  if(original.split(selector).length!==2) throw new Error('Expected one legacy forced highlight CSS rule');
+  return original.replace(selector,selector+':not([data-bt-highlight-paint]):not([data-bt-highlight]):not([data-highlight-style])');
+}
 
 // gh-pages contains fixes newer than main. Extend the exact published version;
 // never replace it with a build of the older main branch.
@@ -55,6 +62,7 @@ export async function build({ write = true, testExports = false } = {}) {
   code = code.slice(0, editorStart) + '}, te = (O, ue, be) => btEditorHtml(O, ue, be), se = O => btEncodeTokens(btReadEditorTokens(O)), je = (O) => {' + code.slice(editorEnd + '}, je = (O) => {'.length);
   replace('const z = i.slides[_];', 'const [btHighlightDraft, btSetHighlightDraft] = Tt.useState(BT_HIGHLIGHT_DEFAULT);\n  const z = i.slides[_];');
   replace('style: { backgroundColor: Y.highlightColor || N.accent, color: Y.textColor || (Y.highlightStyle === "marker" ? void 0 : Y.highlightTextColor || N.accentText), boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone", borderRadius: Y.highlightStyle === "marker" ? "0" : "0.286em", padding: Y.highlightStyle === "marker" ? "0" : "0.143em 0.428em", margin: Y.highlightStyle === "marker" ? "0" : "0 0.143em" }', '"data-highlight-shape": Y.highlightMeta?.shape || (Y.highlightStyle === "marker" ? "marker" : "rounded"), style: btHighlightCss(Y, N)');
+  replace('Y.isHighlighted ? d.jsx("span", { className: "inline transition-all", "data-highlight-shape": Y.highlightMeta?.shape || (Y.highlightStyle === "marker" ? "marker" : "rounded"), style: btHighlightCss(Y, N), children: le }, G) :', 'Y.isHighlighted ? btHighlightElement(Y, N, le, G) :');
   replace('O.target instanceof HTMLInputElement || O.preventDefault();', '(O.target instanceof HTMLInputElement || O.target instanceof HTMLSelectElement) || O.preventDefault();');
   replace('style: { top: `${_e.y - 45}px`, left: `${_e.x}px`, transform: "translateX(-50%)" }', 'style: { top: `${Math.max(8, _e.y - 110)}px`, left: `${Math.max(8 + Math.min(680, window.innerWidth * .95) / 2, Math.min(window.innerWidth - 8 - Math.min(680, window.innerWidth * .95) / 2, _e.x))}px`, transform: "translateX(-50%)", maxWidth:"95vw", width:680, flexWrap:"wrap" }');
   replace('children: [d.jsx("button", { onClick: () => Pe("highlight"),', 'children: [Tt.createElement(BTHighlightControls, {editorId:A, rangeRef:B, palette:S, draft:btHighlightDraft, onDraft:btSetHighlightDraft, onStart:c}), d.jsx("button", { onClick: () => Pe("highlight"),');
@@ -64,13 +72,15 @@ export async function build({ write = true, testExports = false } = {}) {
   const highlights = await readFile(new URL('studio/highlights.jsx', root), 'utf8');
   const extension = (await transform(themes + '\n' + features + '\n' + highlights, { loader: 'jsx', jsxFactory: 'Tt.createElement', jsxFragment: 'Tt.Fragment', charset: 'utf8' })).code;
   const mount = 'fp.createRoot(document.getElementById("root")).render';
-  replace(mount, extension + '\nObject.assign(Ln, BT_THEMES);\n' + (testExports ? 'window.__btTest = {React:Tt, SlideView:Sr, themes:Ln, layout:btBadgeLayout, load:U1, normalize:normalizeConfigFonts, parse:Yh, highlightCss:btHighlightCss, encode:btEncodeTokens, editorHtml:btEditorHtml, readEditor:btReadEditorTokens, root:null};\n' : '') + mount);
+  replace(mount, extension + '\nObject.assign(Ln, BT_THEMES);\n' + (testExports ? 'window.__btTest = {React:Tt, SlideView:Sr, themes:Ln, layout:btBadgeLayout, load:U1, normalize:normalizeConfigFonts, parse:Yh, highlightCss:btHighlightCss, highlightLayout:btHighlightLayout, encode:btEncodeTokens, editorHtml:btEditorHtml, readEditor:btReadEditorTokens, root:null};\n' : '') + mount);
   if (testExports) code = code.replace('fp.createRoot(document.getElementById("root")).render', '(window.__btTest.root = fp.createRoot(document.getElementById("root"))).render');
   const result = await transform(code, { format: 'esm', minify: !testExports, charset: 'utf8', target: 'es2020' });
   if (write) {
     await writeFile(new URL(outputAsset, root), result.code);
+    await writeFile(new URL('assets/btcarousel-studio-v10.css',root),await buildStyles());
     let html = await readFile(new URL('index.html', root), 'utf8');
-    html = html.replace(/\.\/assets\/(?:index-CXyA2O3S-studio-v7|btcarousel-studio-v[89])\.js/, './' + outputAsset);
+    html = html.replace(/\.\/assets\/(?:index-CXyA2O3S-studio-v7|btcarousel-studio-v(?:8|9|10))\.js/, './' + outputAsset);
+    html=html.replace(/\.\/assets\/(?:index-DbMotyE0|btcarousel-studio-v10)\.css/,'./assets/btcarousel-studio-v10.css');
     await writeFile(new URL('index.html', root), html);
     console.log(`Built ${outputAsset} (${Buffer.byteLength(result.code)} bytes) from pinned studio v7; shared social TextBlock and 28 themes.`);
   }

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { JSDOM, VirtualConsole } from 'jsdom';
-import { build } from '../scripts/build.mjs';
+import { build, buildStyles } from '../scripts/build.mjs';
 const code = await build({write:false,testExports:true});
 const makeConfig=ratio=>({slides:[{id:'one',blocks:[{id:'block-one',text:'Наследницы ==огня|marker:#ffcc00==',x:8,y:20,width:84,height:25,fontSize:20,fontWeight:'bold',isItalic:false,align:'center',hasCardBg:true,textEffect:'outline',textStrokeWidth:2.5,textStrokeColor:'#123456'}],backgroundImage:null,bgColor:null},{id:'two',blocks:[{id:'block-two',text:'Второй слайд',x:8,y:20,width:84,height:25,fontSize:20,fontWeight:'bold',isItalic:false,align:'center',hasCardBg:true}],backgroundImage:null,bgColor:null}],palette:{bg:'#faf0f2',text:'#3d2229',accent:'#e598a4',accentText:'#fff',cardBg:'rgba(255,255,255,.78)'},selectedGenre:'romantic',slideDuration:3,transitionDuration:.6,useUniformDuration:true,ratio,showTiktokHud:false,socialBadge:{enabled:true,text:'ТГ: @reyaburn',x:10,y:82,width:80,fontSize:14,textColor:'#ffffff',backgroundColor:'#18181b'}});
 async function setup(config=makeConfig('3:4')) {
@@ -183,7 +183,7 @@ test('per-fragment highlight shape, padding and offset survive editing and expor
  const saved=JSON.parse(w.localStorage.getItem('booktok_carousel_config'));const tokens=w.__btTest.parse(saved.slides[0].blocks[0].text);
  const changed=tokens.find(t=>t.text==='второй');assert(changed.isBold);assert.equal(changed.highlightMeta.shape,'offset');assert.equal(changed.highlightMeta.padX,.65);assert.equal(changed.highlightMeta.padY,.25);assert.equal(changed.highlightMeta.offsetX,.2);assert.equal(changed.highlightMeta.offsetY,.15);assert.equal(changed.highlightColor,'#aa44cc');
  assert(!tokens.find(t=>t.text==='первый').highlightMeta,'other highlights retain their own style');
- const exported=doc.querySelector('#export-slide-0 [data-highlight-shape="offset"]');assert(exported);assert.equal(exported.style.padding,'0.25em 0.65em');assert.equal(exported.style.backgroundPosition,'0.2em 0.15em');assert(exported.querySelector('strong'));
+ const exported=doc.querySelector('#export-slide-0 [data-highlight-shape="offset"]');assert(exported);assert.equal(exported.style.padding,'0.25em 0.65em');assert.equal(exported.querySelector('[data-bt-highlight-paint]').style.transform,'translate(0.2em, 0.15em)');assert(exported.querySelector('strong'));
  assert.equal(w.__btTest.parse(JSON.parse(JSON.stringify(saved)).slides[0].blocks[0].text).find(t=>t.text==='второй').highlightMeta.shape,'offset');
  }finally{await app.close();}
 });
@@ -206,4 +206,39 @@ test('all highlight forms round-trip through editor HTML without losing token fo
  assert.equal(token.highlightMeta.shape,shape);assert.equal(token.text,'Моя любовь');assert(token.isBold&&token.isItalic);assert.equal(token.textColor,'#123456');assert.equal(token.highlightMeta.padX,.2);
  }
  }finally{await app.close();}
+});
+
+test('underline controls change distinct paint geometry through the real menu',async()=>{
+ const app=await setup();const {w,input}=app,doc=w.document;
+ try{
+ const editor=await highlightMenu(app,'Наследницы');const shape=doc.querySelector('[aria-label="Форма цветового выделения"]');
+ await w.__btTest.React.act(async()=>{shape.value='underline';shape.dispatchEvent(new w.Event('change',{bubbles:true}));});
+ const paint=()=>editor.querySelector('[data-bt-highlight-paint]');const holder=()=>paint().parentElement;
+ const initialHeight=paint().style.height;
+ await input(doc.querySelector('[aria-label="Толщина подчёркивания"]'),'0.45');assert.notEqual(paint().style.height,initialHeight);assert.equal(paint().style.height,'0.45em');
+ const gap=holder().style.paddingBottom;await input(doc.querySelector('[aria-label="Объём выделения по вертикали"]'),'0.4');assert.notEqual(holder().style.paddingBottom,gap);
+ const horizontal=holder().style.paddingLeft;await input(doc.querySelector('[aria-label="Объём выделения по горизонтали"]'),'0.8');assert.notEqual(holder().style.paddingLeft,horizontal);assert.equal(holder().style.display,'inline-block');
+ const edge=doc.querySelector('[aria-label="Края цветового выделения"]');await w.__btTest.React.act(async()=>{edge.value='bevel';edge.dispatchEvent(new w.Event('change',{bubbles:true}));});
+ await input(doc.querySelector('[aria-label="Размер среза выделения"]'),'0.1');const small=paint().style.clipPath;
+ await input(doc.querySelector('[aria-label="Размер среза выделения"]'),'0.6');assert.notEqual(paint().style.clipPath,small);assert(paint().style.clipPath.includes('0.6em'));
+ await w.__btTest.React.act(async()=>{edge.value='round';edge.dispatchEvent(new w.Event('change',{bubbles:true}));});
+ await input(doc.querySelector('[aria-label="Скругление цветового выделения"]'),'0.1');const radius=paint().style.borderRadius;
+ await input(doc.querySelector('[aria-label="Скругление цветового выделения"]'),'1');assert.notEqual(paint().style.borderRadius,radius);
+ assert.equal(w.getSelection().toString(),'Наследницы');
+ await commitInlineEditor(app,editor);const exported=doc.querySelector('#export-slide-0 [data-highlight-shape="underline"] [data-bt-highlight-paint]');assert.equal(exported.style.height,'0.45em');assert.equal(exported.style.borderRadius,'0.225em');
+ }finally{await app.close();}
+});
+test('paint markup is excluded from stored text; typography and per-fragment metadata survive',async()=>{
+ const app=await setup();const {w}=app;
+ try{
+ const tokens=[{text:'Моя любовь',isHighlighted:true,isBold:true,highlightColor:'#abcdef',highlightMeta:{shape:'underline',edge:'bevel',cut:.5,thickness:.4,padX:.7,padY:.35}}];
+ const html=w.__btTest.editorHtml(w.__btTest.encode(tokens),'#eeaabb','#fff');assert(html.includes('data-bt-highlight-paint'));
+ const parsed=w.__btTest.parse(w.__btTest.encode(w.__btTest.readEditor(html)));assert.equal(parsed.map(t=>t.text).join(''),'Моя любовь');assert.equal(parsed[0].highlightMeta.cut,.5);assert.equal(parsed[0].highlightMeta.thickness,.4);assert.equal(parsed[0].highlightMeta.edge,'bevel');
+ }finally{await app.close();}
+});
+
+test('legacy forced highlight CSS excludes editable paint and metadata spans',async()=>{
+ const css=await buildStyles();
+ assert(css.includes('[contenteditable] span[style*=background-color]:not([data-bt-highlight-paint]):not([data-bt-highlight]):not([data-highlight-style])'));
+ assert(!css.includes('[contenteditable] span[style*=background-color]{'));
 });
